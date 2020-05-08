@@ -1,0 +1,16 @@
+apiVersion: skaffold/v2alpha4
+kind: Config
+metadata:
+  name: gapura
+build:
+  artifacts:
+  - image: docker.pkg.github.com/vinhut/gapura
+deploy:
+  helm:
+    releases:
+    - name: auth-service
+      chartPath: ../kube-deploy/charts/auth-service
+      valuesFiles: 
+        - ../kube-deploy/charts/auth-service/values.yaml
+      values:
+        imageName: docker.pkg.github.com/vinhut/gapura

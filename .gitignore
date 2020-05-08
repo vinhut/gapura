@@ -1,0 +1,9 @@
+*.ini
+gapura
+main
+*.DS_Store
+vendor/*
+*.exe
+DONT_COMMIT*
+run.bat
+username.txt

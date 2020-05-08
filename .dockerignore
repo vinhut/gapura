@@ -1,0 +1,11 @@
+*.swp
+skaffold.yaml
+*.ini
+main
+*.DS_Store
+vendor/*
+*.exe
+DONT_COMMIT*
+run.bat
+gapura
+kube-deploy
