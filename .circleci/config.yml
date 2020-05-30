@@ -8,7 +8,7 @@ jobs:
       - run: go mod download
       - setup_remote_docker:
           docker_layer_caching: true
-
+      - run: go test
       # build and push Docker image
       - run: |
           TAG=$CIRCLE_SHA1-$CIRCLE_BUILD_NUM
