@@ -7,7 +7,6 @@ import (
 	"github.com/vinhut/gapura/models"
 
 	"bytes"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
