@@ -83,3 +83,19 @@ func TestDecryptToken(t *testing.T) {
 
 	assert.Equal(t, 200, rec.Code)
 }
+
+func TestPublicEndpoint(t *testing.T) {
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mock_user := mocks.NewMockUserDatabase(ctrl)
+
+	router := setupRouter(mock_user)
+
+	rec := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/public", nil)
+	router.ServeHTTP(rec, req)
+
+	assert.Equal(t, 200, rec.Code)
+
+}
