@@ -68,6 +68,8 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 		ret, err := utils.GCM_decrypt(key, splitted[1], splitted[0], nil)
 		if err == nil {
 			c.String(200, ret)
+		} else {
+			c.String(401, "Unauthorized")
 		}
 		// TODO : token expiry check
 	})
