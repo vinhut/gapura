@@ -110,7 +110,14 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			Uid:            primitive.NewObjectIDFromTimestamp(time.Now()),
 		}
 
-		userdb.Create(new_user)
+		_, err = userdb.Create(new_user)
+
+		if err == nil {
+			c.String(200, "created")
+		} else {
+			c.String(503, "fail")
+			fmt.Println(err)
+		}
 
 	})
 
