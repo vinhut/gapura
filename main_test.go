@@ -119,3 +119,30 @@ func TestPublicEndpoint(t *testing.T) {
 	assert.Equal(t, 200, rec.Code)
 
 }
+
+func TestCreateUser(t *testing.T) {
+
+	test_email := "newusertest@test.com"
+	test_password := "test_password"
+
+	os.Setenv("KEY", "12345678901234567890123456789012")
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mock_user := mocks.NewMockUserDatabase(ctrl)
+	mock_user.EXPECT().Create(gomock.Any()).Return(true, nil)
+
+	router := setupRouter(mock_user)
+
+	var param = url.Values{}
+	param.Set("email", test_email)
+	param.Set("password", test_password)
+	var payload = bytes.NewBufferString(param.Encode())
+
+	pre_w := httptest.NewRecorder()
+	pre_req, _ := http.NewRequest("POST", "/user", payload)
+	pre_req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	router.ServeHTTP(pre_w, pre_req)
+
+	assert.Equal(t, 200, pre_w.Code)
+
+}
