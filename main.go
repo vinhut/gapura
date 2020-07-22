@@ -9,9 +9,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -67,7 +69,29 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 		splitted := strings.Split(token, "-")
 		ret, err := utils.GCM_decrypt(key, splitted[1], splitted[0], nil)
 		if err == nil {
-			c.String(200, ret)
+			var placeholder map[string]interface{}
+			if err := json.Unmarshal([]byte(ret), &placeholder); err != nil {
+				fmt.Println(err)
+			}
+
+			result := &models.User{}
+			err := userdb.Find("uid", placeholder["uid"].(string), result)
+			if err != nil {
+				panic(err)
+			}
+			user_detail := "{\"uid\": \"" + result.Uid.Hex() +
+				"\", \"email\": \"" + result.Email +
+				"\", \"role\": \"" + result.Role +
+				"\", \"avatarurl\": \"" + result.Avatarurl +
+				"\", \"active\": \"" + strconv.FormatBool(result.Active) +
+				"\", \"screenname\": \"" + result.Screenname +
+				"\", \"location\": \"" + result.Location +
+				"\", \"protected\": \"" + strconv.FormatBool(result.Protected) +
+				"\", \"description\": \"" + result.Description +
+				"\", \"verified\": \"" + strconv.FormatBool(result.Verified) +
+				"\"}"
+
+			c.String(200, user_detail)
 		} else {
 			c.String(401, "Unauthorized")
 		}
@@ -101,7 +125,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			Location:       "Earth",
 			Protected:      false,
 			Description:    "Hi please update your profile",
-			Verfied:        false,
+			Verified:       false,
 			Followercount:  0,
 			Followingcount: 0,
 			Likecount:      0,
