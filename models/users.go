@@ -33,7 +33,7 @@ type User struct {
 	Location       string
 	Protected      bool
 	Description    string
-	Verfied        bool
+	Verified       bool
 	Followercount  int
 	Followingcount int
 	Likecount      int
@@ -56,7 +56,7 @@ func NewUser() User {
 		Location:       "",
 		Protected:      false,
 		Description:    "",
-		Verfied:        false,
+		Verified:       false,
 		Followercount:  0,
 		Followingcount: 0,
 		Likecount:      0,
