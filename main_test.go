@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	mocks "github.com/vinhut/gapura/mocks"
 	"github.com/vinhut/gapura/models"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"bytes"
 	"net/http"
@@ -101,12 +102,19 @@ func TestFailedLogin(t *testing.T) {
 func TestDecryptToken(t *testing.T) {
 
 	service_name := "test-service"
-	token := "852a37a34b727c0e0b331806-7af4bdfdcc60990d427f383efecc8529289d040dd67e0753b9e2ee5a1e938402186f28324df23f6faa4e2bbf43f584ae228c55b00143866215d6e92805d470a1cc2a096dcca4d43527598122313be412e17fbefdcdab2fae02e06a405791d936862d4fba688b3c7fd784d4"
+	test_uid := primitive.NewObjectID()
+	token := "439e835079c54999066756ce-826dc68c5fc8c80aafab394632223f64dabdf89f0fd1b1a08d2398fed435d8b89ed0d2a97748054a1f442cf2b6adb953bbd4d5318f7dd7304dda9562325bad2b6d29843121690e7d7e27e1cdd17b9fef9be49aff66cd7610698b7fdd4722528432b545a522fabc334c9fb3a2b07299d4ebdc3d70c1b0204ea88b38da670447b9031d2fe9235a56cb268d"
 
 	os.Setenv("KEY", "12345678901234567890123456789012")
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mock_user := mocks.NewMockUserDatabase(ctrl)
+	input := models.User{}
+	mock_user.EXPECT().Find("uid", gomock.Any(), &input).Do(
+		func(a string, b string, c *models.User) error {
+			c.Uid = test_uid
+			return nil
+		})
 
 	router := setupRouter(mock_user)
 
@@ -141,12 +149,19 @@ func TestFailedDecryptToken(t *testing.T) {
 func TestDecryptTokenFromCookies(t *testing.T) {
 
 	service_name := "test-service"
-	token := "852a37a34b727c0e0b331806-7af4bdfdcc60990d427f383efecc8529289d040dd67e0753b9e2ee5a1e938402186f28324df23f6faa4e2bbf43f584ae228c55b00143866215d6e92805d470a1cc2a096dcca4d43527598122313be412e17fbefdcdab2fae02e06a405791d936862d4fba688b3c7fd784d4"
+	test_uid := primitive.NewObjectID()
+	token := "439e835079c54999066756ce-826dc68c5fc8c80aafab394632223f64dabdf89f0fd1b1a08d2398fed435d8b89ed0d2a97748054a1f442cf2b6adb953bbd4d5318f7dd7304dda9562325bad2b6d29843121690e7d7e27e1cdd17b9fef9be49aff66cd7610698b7fdd4722528432b545a522fabc334c9fb3a2b07299d4ebdc3d70c1b0204ea88b38da670447b9031d2fe9235a56cb268d"
 
 	os.Setenv("KEY", "12345678901234567890123456789012")
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mock_user := mocks.NewMockUserDatabase(ctrl)
+	input := models.User{}
+	mock_user.EXPECT().Find("uid", gomock.Any(), &input).Do(
+		func(a string, b string, c *models.User) error {
+			c.Uid = test_uid
+			return nil
+		})
 
 	router := setupRouter(mock_user)
 

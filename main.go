@@ -71,27 +71,29 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 		if err == nil {
 			var placeholder map[string]interface{}
 			if err := json.Unmarshal([]byte(ret), &placeholder); err != nil {
-				fmt.Println(err)
-			}
-
-			result := &models.User{}
-			err := userdb.Find("uid", placeholder["uid"].(string), result)
-			if err != nil {
 				panic(err)
-			}
-			user_detail := "{\"uid\": \"" + result.Uid.Hex() +
-				"\", \"email\": \"" + result.Email +
-				"\", \"role\": \"" + result.Role +
-				"\", \"avatarurl\": \"" + result.Avatarurl +
-				"\", \"active\": \"" + strconv.FormatBool(result.Active) +
-				"\", \"screenname\": \"" + result.Screenname +
-				"\", \"location\": \"" + result.Location +
-				"\", \"protected\": \"" + strconv.FormatBool(result.Protected) +
-				"\", \"description\": \"" + result.Description +
-				"\", \"verified\": \"" + strconv.FormatBool(result.Verified) +
-				"\"}"
+				c.String(401, "Unauthorized")
+			} else {
 
-			c.String(200, user_detail)
+				result := &models.User{}
+				err := userdb.Find("uid", placeholder["uid"].(string), result)
+				if err != nil {
+					panic(err)
+				}
+				user_detail := "{\"uid\": \"" + result.Uid.Hex() +
+					"\", \"email\": \"" + result.Email +
+					"\", \"role\": \"" + result.Role +
+					"\", \"avatarurl\": \"" + result.Avatarurl +
+					"\", \"active\": \"" + strconv.FormatBool(result.Active) +
+					"\", \"screenname\": \"" + result.Screenname +
+					"\", \"location\": \"" + result.Location +
+					"\", \"protected\": \"" + strconv.FormatBool(result.Protected) +
+					"\", \"description\": \"" + result.Description +
+					"\", \"verified\": \"" + strconv.FormatBool(result.Verified) +
+					"\"}"
+
+				c.String(200, user_detail)
+			}
 		} else {
 			c.String(401, "Unauthorized")
 		}
