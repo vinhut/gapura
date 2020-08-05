@@ -7,6 +7,7 @@ package mock_models
 import (
 	gomock "github.com/golang/mock/gomock"
 	models "github.com/vinhut/gapura/models"
+	primitive "go.mongodb.org/mongo-driver/bson/primitive"
 	reflect "reflect"
 )
 
@@ -45,6 +46,20 @@ func (m *MockUserDatabase) Find(arg0, arg1 string, arg2 interface{}) error {
 func (mr *MockUserDatabaseMockRecorder) Find(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Find", reflect.TypeOf((*MockUserDatabase)(nil).Find), arg0, arg1, arg2)
+}
+
+// FindByUid mocks base method
+func (m *MockUserDatabase) FindByUid(arg0 string, arg1 primitive.ObjectID, arg2 interface{}) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindByUid", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// FindByUid indicates an expected call of FindByUid
+func (mr *MockUserDatabaseMockRecorder) FindByUid(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByUid", reflect.TypeOf((*MockUserDatabase)(nil).FindByUid), arg0, arg1, arg2)
 }
 
 // Create mocks base method

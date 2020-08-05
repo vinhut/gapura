@@ -110,7 +110,7 @@ func TestDecryptToken(t *testing.T) {
 	defer ctrl.Finish()
 	mock_user := mocks.NewMockUserDatabase(ctrl)
 	input := models.User{}
-	mock_user.EXPECT().Find("uid", gomock.Any(), &input).Do(
+	mock_user.EXPECT().FindByUid("_id", gomock.Any(), &input).Do(
 		func(a string, b string, c *models.User) error {
 			c.Uid = test_uid
 			return nil
@@ -157,7 +157,7 @@ func TestDecryptTokenFromCookies(t *testing.T) {
 	defer ctrl.Finish()
 	mock_user := mocks.NewMockUserDatabase(ctrl)
 	input := models.User{}
-	mock_user.EXPECT().Find("uid", gomock.Any(), &input).Do(
+	mock_user.EXPECT().FindByUid("_id", gomock.Any(), &input).Do(
 		func(a string, b string, c *models.User) error {
 			c.Uid = test_uid
 			return nil
