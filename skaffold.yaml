@@ -9,8 +9,8 @@ deploy:
   helm:
     releases:
     - name: auth-service
-      chartPath: ../kube-deploy/charts/auth-service
+      chartPath: ../../kube-deploy/charts/auth-service
       valuesFiles: 
-        - ../kube-deploy/charts/auth-service/values.yaml
+        - ../../kube-deploy/charts/auth-service/values.yaml
       values:
         imageName: docker.pkg.github.com/vinhut/gapura
