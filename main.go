@@ -76,11 +76,15 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			} else {
 
 				result := &models.User{}
-				err := userdb.Find("uid", placeholder["uid"].(string), result)
+				fmt.Println(placeholder["uid"].(string))
+				find_uid, _ := primitive.ObjectIDFromHex(placeholder["uid"].(string))
+				err := userdb.FindByUid("_id", find_uid, result)
 				if err != nil {
+					fmt.Println("error find user")
 					panic(err)
 				}
 				user_detail := "{\"uid\": \"" + result.Uid.Hex() +
+					"\", \"username\": \"" + result.Username +
 					"\", \"email\": \"" + result.Email +
 					"\", \"role\": \"" + result.Role +
 					"\", \"avatarurl\": \"" + result.Avatarurl +

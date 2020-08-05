@@ -2,6 +2,7 @@ package helper
 
 import (
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -14,6 +15,7 @@ import (
 
 type DatabaseHelper interface {
 	Query(string, string, string, interface{}) error
+	QueryByUid(string, string, primitive.ObjectID, interface{}) error
 	Insert(string, interface{}) error
 	Delete(string, interface{}) error
 }
@@ -48,8 +50,18 @@ func (mdb *MongoDBHelper) Query(collectionName string, key string, value string,
 	result := collection.FindOne(ctx, bson.M{key: value})
 	err := result.Decode(data)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+	return nil
+}
+
+func (mdb *MongoDBHelper) QueryByUid(collectionName string, key string, value primitive.ObjectID, data interface{}) error {
+
+	collection := mdb.db.Collection(collectionName)
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+
+	result := collection.FindOne(ctx, bson.M{key: value})
+	err := result.Decode(data)
 	if err != nil {
 		return err
 	}
