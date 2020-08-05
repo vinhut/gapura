@@ -11,6 +11,7 @@ const tableName = "users"
 
 type UserDatabase interface {
 	Find(string, string, interface{}) error
+	FindByUid(string, primitive.ObjectID, interface{}) error
 	Create(*User) (bool, error)
 	Update() (bool, error)
 	Delete(string) (bool, error)
@@ -75,6 +76,15 @@ func NewUserDatabase(db helper.DatabaseHelper) UserDatabase {
 
 func (userdb *userDatabase) Find(column string, value string, result_user interface{}) error {
 	err := userdb.db.Query(tableName, column, value, result_user)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (userdb *userDatabase) FindByUid(column string, value primitive.ObjectID, result_user interface{}) error {
+	err := userdb.db.QueryByUid(tableName, column, value, result_user)
 	if err != nil {
 		return err
 	}
