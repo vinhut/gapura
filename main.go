@@ -2,6 +2,11 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
+	jaegercfg "github.com/uber/jaeger-client-go/config"
+	jaegerlog "github.com/uber/jaeger-client-go/log"
+	"github.com/uber/jaeger-lib/metrics"
 	"github.com/vinhut/gapura/helpers"
 	"github.com/vinhut/gapura/models"
 	"github.com/vinhut/gapura/utils"
@@ -20,14 +25,43 @@ import (
 
 func setupRouter(userdb models.UserDatabase) *gin.Engine {
 
+	var JAEGER_COLLECTOR_ENDPOINT = os.Getenv("JAEGER_COLLECTOR_ENDPOINT")
+	cfg := jaegercfg.Configuration{
+		ServiceName: "auth-service",
+		Sampler: &jaegercfg.SamplerConfig{
+			Type:  "const",
+			Param: 1,
+		},
+		Reporter: &jaegercfg.ReporterConfig{
+			LogSpans:          true,
+			CollectorEndpoint: JAEGER_COLLECTOR_ENDPOINT,
+		},
+	}
+	jLogger := jaegerlog.StdLogger
+	jMetricsFactory := metrics.NullFactory
+	tracer, _, _ := cfg.NewTracer(
+		jaegercfg.Logger(jLogger),
+		jaegercfg.Metrics(jMetricsFactory),
+	)
+	opentracing.SetGlobalTracer(tracer)
+
 	key := os.Getenv("KEY")
 	router := gin.Default()
 
 	router.GET("/ping", func(c *gin.Context) {
+		span := tracer.StartSpan("ping")
 		c.String(200, "OK")
+		span.Finish()
 	})
 
 	router.POST("/login", func(c *gin.Context) {
+		spanCtx, span_err := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(c.Request.Header))
+		if span_err != nil {
+			panic(span_err)
+		}
+
+		span := tracer.StartSpan("login", ext.RPCServerOption(spanCtx))
+
 		user_email := c.PostForm("email")
 		user_pass := c.PostForm("password")
 		result := &models.User{}
@@ -45,14 +79,19 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			auth_token := "{\"uid\": \"" + result.Uid.Hex() + "\", \"email\": \"" + user_email + "\", \"role\": \"" + result.Role + "\", \"created\": \"" + now.Format("2006-01-02T15:04:05") + "\"}"
 			token := utils.GCM_encrypt(key, auth_token, iv, nil)
 			c.String(200, token)
+			span.Finish()
 
 		} else {
 			c.String(401, "Unauthorized")
+			span.Finish()
 		}
 
 	})
 
 	router.GET("/user", func(c *gin.Context) {
+		spanCtx, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(c.Request.Header))
+		span := tracer.StartSpan("check user", ext.RPCServerOption(spanCtx))
+
 		service_name, _ := c.GetQuery("service")
 		if service_name == "" {
 			c.String(401, "Unauthorized")
@@ -63,6 +102,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			if err1 == nil {
 				token = ret_c
 			} else {
+				span.Finish()
 				panic(err1.Error())
 			}
 		}
@@ -73,6 +113,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			if err := json.Unmarshal([]byte(ret), &placeholder); err != nil {
 				panic(err)
 				c.String(401, "Unauthorized")
+				span.Finish()
 			} else {
 
 				result := &models.User{}
@@ -81,6 +122,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 				err := userdb.FindByUid("_id", find_uid, result)
 				if err != nil {
 					fmt.Println("error find user")
+					span.Finish()
 					panic(err)
 				}
 				user_detail := "{\"uid\": \"" + result.Uid.Hex() +
@@ -97,9 +139,11 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 					"\"}"
 
 				c.String(200, user_detail)
+				span.Finish()
 			}
 		} else {
 			c.String(401, "Unauthorized")
+			span.Finish()
 		}
 		// TODO : token expiry check
 	})
@@ -109,6 +153,8 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 	})
 
 	router.POST("/user", func(c *gin.Context) {
+		spanCtx, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(c.Request.Header))
+		span := tracer.StartSpan("create user", ext.RPCServerOption(spanCtx))
 		//service_name := c.PostForm("service")
 		user_email := c.PostForm("email")
 		password := c.PostForm("password")
@@ -144,9 +190,11 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 
 		if err == nil {
 			c.String(200, "created")
+			span.Finish()
 		} else {
 			c.String(503, "fail")
 			fmt.Println(err)
+			span.Finish()
 		}
 
 	})
