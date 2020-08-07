@@ -55,11 +55,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 	})
 
 	router.POST("/login", func(c *gin.Context) {
-		spanCtx, span_err := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(c.Request.Header))
-		if span_err != nil {
-			panic(span_err)
-		}
-
+		spanCtx, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(c.Request.Header))
 		span := tracer.StartSpan("login", ext.RPCServerOption(spanCtx))
 
 		user_email := c.PostForm("email")
