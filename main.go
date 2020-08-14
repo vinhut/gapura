@@ -23,6 +23,8 @@ import (
 	"time"
 )
 
+var SERVICE_NAME = "auth-service"
+
 func setupRouter(userdb models.UserDatabase) *gin.Engine {
 
 	var JAEGER_COLLECTOR_ENDPOINT = os.Getenv("JAEGER_COLLECTOR_ENDPOINT")
@@ -190,6 +192,52 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 		} else {
 			c.String(503, "fail")
 			fmt.Println(err)
+			span.Finish()
+		}
+
+	})
+
+	router.GET(SERVICE_NAME+"/profile/:username", func(c *gin.Context) {
+		spanCtx, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(c.Request.Header))
+		span := tracer.StartSpan("get profile", ext.RPCServerOption(spanCtx))
+
+		name := c.Param("username")
+		token, token_err := c.Cookie("token")
+		if token_err != nil {
+			panic("failed get token")
+		}
+		splitted := strings.Split(token, "-")
+		_, err := utils.GCM_decrypt(key, splitted[1], splitted[0], nil)
+		if err == nil {
+
+			result := &models.User{}
+			err := userdb.Find("username", name, result)
+			if err != nil {
+				fmt.Println("error find user")
+				span.Finish()
+				panic(err)
+			} else {
+				user_detail := "{\"uid\": \"" + result.Uid.Hex() +
+					"\", \"username\": \"" + result.Username +
+					"\", \"email\": \"" + result.Email +
+					"\", \"role\": \"" + result.Role +
+					"\", \"avatarurl\": \"" + result.Avatarurl +
+					"\", \"active\": \"" + strconv.FormatBool(result.Active) +
+					"\", \"screenname\": \"" + result.Screenname +
+					"\", \"location\": \"" + result.Location +
+					"\", \"protected\": \"" + strconv.FormatBool(result.Protected) +
+					"\", \"description\": \"" + result.Description +
+					"\", \"verified\": \"" + strconv.FormatBool(result.Verified) +
+					"\", \"follower\": \"" + strconv.Itoa(result.Followercount) +
+					"\", \"following\": \"" + strconv.Itoa(result.Followingcount) +
+					"\", \"post\": \"" + strconv.Itoa(result.Postcount) +
+					"\"}"
+
+				c.String(200, user_detail)
+				span.Finish()
+			}
+		} else {
+			c.String(401, "unauthorized")
 			span.Finish()
 		}
 
