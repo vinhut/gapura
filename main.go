@@ -157,7 +157,11 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 		user_email := c.PostForm("email")
 		password := c.PostForm("password")
 
-		hashed, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+		cspan := tracer.StartSpan("bcrypt generate hash",
+			opentracing.ChildOf(span.Context()),
+		)
+		hashed, err := bcrypt.GenerateFromPassword([]byte(password), 8)
+		cspan.Finish()
 		if err != nil {
 			fmt.Println(err)
 		}
