@@ -4,6 +4,7 @@ require (
 	github.com/gin-contrib/sessions v0.0.3 // indirect
 	github.com/gin-gonic/gin v1.5.0
 	github.com/golang/mock v1.4.0
+	github.com/opencensus-integrations/gomongowrapper v0.0.3
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/stretchr/testify v1.4.0
 	github.com/uber/jaeger-client-go v2.25.0+incompatible

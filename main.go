@@ -66,7 +66,11 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 		err := userdb.Find("email", user_email, result)
 
 		if err == nil {
+			cspan := tracer.StartSpan("bcrypt compare hash",
+				opentracing.ChildOf(span.Context()),
+			)
 			err = bcrypt.CompareHashAndPassword([]byte(result.Password), []byte(user_pass))
+			cspan.Finish()
 		}
 		if err == nil {
 			iv := make([]byte, 12)
@@ -75,7 +79,11 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			}
 			now := time.Now()
 			auth_token := "{\"uid\": \"" + result.Uid.Hex() + "\", \"email\": \"" + user_email + "\", \"role\": \"" + result.Role + "\", \"created\": \"" + now.Format("2006-01-02T15:04:05") + "\"}"
+			cspan := tracer.StartSpan("gcm encrypt auth_token",
+				opentracing.ChildOf(span.Context()),
+			)
 			token := utils.GCM_encrypt(key, auth_token, iv, nil)
+			cspan.Finish()
 			c.String(200, token)
 			span.Finish()
 
@@ -105,7 +113,12 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			}
 		}
 		splitted := strings.Split(token, "-")
+
+		cspan := tracer.StartSpan("gcm decrypt auth_token",
+			opentracing.ChildOf(span.Context()),
+		)
 		ret, err := utils.GCM_decrypt(key, splitted[1], splitted[0], nil)
+		cspan.Finish()
 		if err == nil {
 			var placeholder map[string]interface{}
 			if err := json.Unmarshal([]byte(ret), &placeholder); err != nil {
@@ -155,6 +168,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 		span := tracer.StartSpan("create user", ext.RPCServerOption(spanCtx))
 		//service_name := c.PostForm("service")
 		user_email := c.PostForm("email")
+		user_name := c.PostForm("username")
 		password := c.PostForm("password")
 
 		cspan := tracer.StartSpan("bcrypt generate hash",
@@ -167,7 +181,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 		}
 
 		new_user := &models.User{
-			Username:       user_email,
+			Username:       user_name,
 			Email:          user_email,
 			Password:       string(hashed),
 			Role:           "standard",
@@ -175,7 +189,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			Creationtime:   time.Now(),
 			Avatarurl:      "http://localhost/profile.png",
 			Active:         true,
-			Screenname:     user_email,
+			Screenname:     user_name,
 			Location:       "Earth",
 			Protected:      false,
 			Description:    "Hi please update your profile",
