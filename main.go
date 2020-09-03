@@ -51,9 +51,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 	router := gin.Default()
 
 	router.GET("/ping", func(c *gin.Context) {
-		span := tracer.StartSpan("ping")
 		c.String(200, "OK")
-		span.Finish()
 	})
 
 	router.POST("/login", func(c *gin.Context) {
