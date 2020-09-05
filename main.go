@@ -4,8 +4,11 @@ import (
 	"github.com/gin-gonic/gin"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
+	jaeger "github.com/uber/jaeger-client-go"
 	jaegercfg "github.com/uber/jaeger-client-go/config"
 	jaegerlog "github.com/uber/jaeger-client-go/log"
+	transport "github.com/uber/jaeger-client-go/transport/zipkin"
+	"github.com/uber/jaeger-client-go/zipkin"
 	"github.com/uber/jaeger-lib/metrics"
 	"github.com/vinhut/gapura/helpers"
 	"github.com/vinhut/gapura/models"
@@ -28,6 +31,11 @@ var SERVICE_NAME = "auth-service"
 func setupRouter(userdb models.UserDatabase) *gin.Engine {
 
 	var JAEGER_COLLECTOR_ENDPOINT = os.Getenv("JAEGER_COLLECTOR_ENDPOINT")
+	zipkinPropagator := zipkin.NewZipkinB3HTTPHeaderPropagator()
+	trsport, _ := transport.NewHTTPTransport(
+		JAEGER_COLLECTOR_ENDPOINT,
+		transport.HTTPLogger(jaeger.StdLogger),
+	)
 	cfg := jaegercfg.Configuration{
 		ServiceName: "auth-service",
 		Sampler: &jaegercfg.SamplerConfig{
@@ -41,11 +49,16 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 	}
 	jLogger := jaegerlog.StdLogger
 	jMetricsFactory := metrics.NullFactory
-	tracer, _, _ := cfg.NewTracer(
+	cfg.InitGlobalTracer(
+		"auth-service",
 		jaegercfg.Logger(jLogger),
 		jaegercfg.Metrics(jMetricsFactory),
+		jaegercfg.Injector(opentracing.HTTPHeaders, zipkinPropagator),
+		jaegercfg.Extractor(opentracing.HTTPHeaders, zipkinPropagator),
+		jaegercfg.ZipkinSharedRPCSpan(true),
+		jaegercfg.Reporter(jaeger.NewRemoteReporter(trsport)),
 	)
-	opentracing.SetGlobalTracer(tracer)
+	tracer := opentracing.GlobalTracer()
 
 	key := os.Getenv("KEY")
 	router := gin.Default()
