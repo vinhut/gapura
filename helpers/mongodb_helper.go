@@ -29,13 +29,12 @@ func NewMongoDatabase() DatabaseHelper {
 
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_URL")))
-	log.Print(os.Getenv("MONGO_URL"))
 	if err != nil {
 		log.Fatal(err)
+		return nil
 	}
 
 	db := client.Database(os.Getenv("MONGO_DATABASE"))
-	log.Print(os.Getenv("MONGO_DATABASE"))
 	return &MongoDBHelper{
 		client: client,
 		db:     db,

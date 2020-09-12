@@ -129,7 +129,7 @@ func TestDecryptToken(t *testing.T) {
 func TestFailedDecryptToken(t *testing.T) {
 
 	service_name := "test-service"
-	token := "852a37a34b727c0e0b331806-7af4bdfdcc60990d427f383efecc8529289d040dd67e0753b9e2ee5a1e938402186f28324df23f6faa4e2bbf43f584ae228c55b00143866215d6e92805d470a1cc2a096dcca4d43527598122313be412e17fbefdcdab2fae02e06a405791d936862d4fba688b3c7" //fd784d4"
+	token := "852a37a34b727c0e0b3318ab-7af4bdfdcc60990d427f383efecc8529289d040dd67e0753b9e2ee5a1e938402186f28324df23f6faa4e2bbf43f584ae228c55b00143866215d6e92805d470a1cc2a096dcca4d43527598122313be412e17fbefdcdab2fae02e06a405791d936862d4fba688b3c7" //fd784d4"
 
 	os.Setenv("KEY", "12345678901234567890123456789012")
 	ctrl := gomock.NewController(t)
@@ -228,7 +228,7 @@ func TestCreateUser(t *testing.T) {
 	var payload = bytes.NewBufferString(param.Encode())
 
 	pre_w := httptest.NewRecorder()
-	pre_req, _ := http.NewRequest("POST", "/user", payload)
+	pre_req, _ := http.NewRequest("POST", "/user?service=test", payload)
 	pre_req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	router.ServeHTTP(pre_w, pre_req)
 

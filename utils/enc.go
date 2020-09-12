@@ -6,18 +6,18 @@ import (
 	"encoding/hex"
 )
 
-func GCM_encrypt(key string, plaintext string, iv []byte, additionalData []byte) string {
+func GCM_encrypt(key string, plaintext string, iv []byte, additionalData []byte) (string, error) {
 	block, err := aes.NewCipher([]byte(key))
 	if err != nil {
-		panic(err.Error())
+		return "error", err
 	}
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
-		panic(err.Error())
+		return "error", err
 	}
 	ciphertext := aesgcm.Seal(nil, iv, []byte(plaintext), additionalData)
 	stringed := hex.EncodeToString(iv) + "-" + hex.EncodeToString(ciphertext)
-	return stringed
+	return stringed, nil
 }
 
 func GCM_decrypt(key string, ct string, iv string, additionalData []byte) (string, error) {

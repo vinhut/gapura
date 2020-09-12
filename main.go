@@ -18,7 +18,6 @@ import (
 
 	"crypto/rand"
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -74,35 +73,41 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 		user_email := c.PostForm("email")
 		user_pass := c.PostForm("password")
 		result := &models.User{}
-		err := userdb.Find("email", user_email, result)
+		find_err := userdb.Find("email", user_email, result)
 
-		if err == nil {
-			cspan := tracer.StartSpan("bcrypt compare hash",
-				opentracing.ChildOf(span.Context()),
-			)
-			err = bcrypt.CompareHashAndPassword([]byte(result.Password), []byte(user_pass))
-			cspan.Finish()
+		if find_err != nil {
+			c.AbortWithStatusJSON(401, gin.H{"reason": "login error"})
+			return
 		}
-		if err == nil {
-			iv := make([]byte, 12)
-			if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-				panic(err.Error())
-			}
-			now := time.Now()
-			auth_token := "{\"uid\": \"" + result.Uid.Hex() + "\", \"email\": \"" + user_email + "\", \"role\": \"" + result.Role + "\", \"created\": \"" + now.Format("2006-01-02T15:04:05") + "\"}"
-			cspan := tracer.StartSpan("gcm encrypt auth_token",
-				opentracing.ChildOf(span.Context()),
-			)
-			token := utils.GCM_encrypt(key, auth_token, iv, nil)
-			cspan.Finish()
-			c.String(200, token)
-			span.Finish()
-
-		} else {
-			c.String(401, "Unauthorized")
-			span.Finish()
+		cspan := tracer.StartSpan("bcrypt compare hash",
+			opentracing.ChildOf(span.Context()),
+		)
+		compare_err := bcrypt.CompareHashAndPassword([]byte(result.Password), []byte(user_pass))
+		cspan.Finish()
+		if compare_err != nil {
+			c.AbortWithStatusJSON(401, gin.H{"reason": "login error"})
+			return
 		}
+		iv := make([]byte, 12)
+		if _, read_err := io.ReadFull(rand.Reader, iv); read_err != nil {
+			panic(read_err.Error())
+		}
+		now := time.Now()
+		auth_token := "{\"uid\": \"" + result.Uid.Hex() + "\", \"email\": \"" +
+			user_email + "\", \"role\": \"" + result.Role +
+			"\", \"created\": \"" + now.Format("2006-01-02T15:04:05") +
+			"\"}"
+		cspan = tracer.StartSpan("gcm encrypt auth_token",
+			opentracing.ChildOf(span.Context()),
+		)
+		token, encrypt_err := utils.GCM_encrypt(key, auth_token, iv, nil)
+		cspan.Finish()
+		if encrypt_err != nil {
+			panic(encrypt_err.Error())
+		}
+		c.String(200, token)
 
+		span.Finish()
 	})
 
 	router.GET("/user", func(c *gin.Context) {
@@ -111,63 +116,62 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 
 		service_name, _ := c.GetQuery("service")
 		if service_name == "" {
-			c.String(401, "Unauthorized")
+			c.AbortWithStatusJSON(401, gin.H{"reason": "Missing service name"})
+			return
 		}
 		token, exist := c.GetQuery("token")
 		if exist == false {
-			ret_c, err1 := c.Cookie("token")
-			if err1 == nil {
-				token = ret_c
-			} else {
+			token_cookie, cookie_err := c.Cookie("token")
+			if cookie_err != nil {
 				span.Finish()
-				panic(err1.Error())
+				c.AbortWithStatusJSON(401, gin.H{"reason": "Token not found"})
+				return
+			} else {
+				token = token_cookie
 			}
 		}
-		splitted := strings.Split(token, "-")
+		token_encrypted := strings.Split(token, "-")
 
 		cspan := tracer.StartSpan("gcm decrypt auth_token",
 			opentracing.ChildOf(span.Context()),
 		)
-		ret, err := utils.GCM_decrypt(key, splitted[1], splitted[0], nil)
+		token_data, decrypt_err := utils.GCM_decrypt(key, token_encrypted[1], token_encrypted[0], nil)
 		cspan.Finish()
-		if err == nil {
-			var placeholder map[string]interface{}
-			if err := json.Unmarshal([]byte(ret), &placeholder); err != nil {
-				panic(err)
-				c.String(401, "Unauthorized")
-				span.Finish()
-			} else {
-
-				result := &models.User{}
-				fmt.Println(placeholder["uid"].(string))
-				find_uid, _ := primitive.ObjectIDFromHex(placeholder["uid"].(string))
-				err := userdb.FindByUid("_id", find_uid, result)
-				if err != nil {
-					fmt.Println("error find user")
-					span.Finish()
-					panic(err)
-				}
-				user_detail := "{\"uid\": \"" + result.Uid.Hex() +
-					"\", \"username\": \"" + result.Username +
-					"\", \"email\": \"" + result.Email +
-					"\", \"role\": \"" + result.Role +
-					"\", \"avatarurl\": \"" + result.Avatarurl +
-					"\", \"active\": \"" + strconv.FormatBool(result.Active) +
-					"\", \"screenname\": \"" + result.Screenname +
-					"\", \"location\": \"" + result.Location +
-					"\", \"protected\": \"" + strconv.FormatBool(result.Protected) +
-					"\", \"description\": \"" + result.Description +
-					"\", \"verified\": \"" + strconv.FormatBool(result.Verified) +
-					"\"}"
-
-				c.String(200, user_detail)
-				span.Finish()
-			}
-		} else {
-			c.String(401, "Unauthorized")
-			span.Finish()
+		if decrypt_err != nil {
+			c.AbortWithStatusJSON(401, gin.H{"reason": "Unauthorized"})
+			return
 		}
-		// TODO : token expiry check
+		var placeholder map[string]interface{}
+		if json_err := json.Unmarshal([]byte(token_data), &placeholder); json_err != nil {
+			span.Finish()
+			panic(json_err.Error())
+		}
+		user_data := &models.User{}
+		find_uid, convert_err := primitive.ObjectIDFromHex(placeholder["uid"].(string))
+		if convert_err != nil {
+			span.Finish()
+			panic(convert_err.Error())
+		}
+		find_err := userdb.FindByUid("_id", find_uid, user_data)
+		if find_err != nil {
+			span.Finish()
+			c.AbortWithStatusJSON(404, gin.H{"reason": "User not found"})
+			return
+		}
+		user_detail := "{\"uid\": \"" + user_data.Uid.Hex() +
+			"\", \"username\": \"" + user_data.Username +
+			"\", \"email\": \"" + user_data.Email +
+			"\", \"role\": \"" + user_data.Role +
+			"\", \"avatarurl\": \"" + user_data.Avatarurl +
+			"\", \"active\": \"" + strconv.FormatBool(user_data.Active) +
+			"\", \"screenname\": \"" + user_data.Screenname +
+			"\", \"location\": \"" + user_data.Location +
+			"\", \"protected\": \"" + strconv.FormatBool(user_data.Protected) +
+			"\", \"description\": \"" + user_data.Description +
+			"\", \"verified\": \"" + strconv.FormatBool(user_data.Verified) +
+			"\"}"
+		c.String(200, user_detail)
+		span.Finish()
 	})
 
 	router.GET("/public", func(c *gin.Context) {
@@ -177,7 +181,11 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 	router.POST("/user", func(c *gin.Context) {
 		spanCtx, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(c.Request.Header))
 		span := tracer.StartSpan("create user", ext.RPCServerOption(spanCtx))
-		//service_name := c.PostForm("service")
+		service_name, _ := c.GetQuery("service")
+		if service_name == "" {
+			c.AbortWithStatusJSON(401, gin.H{"reason": "Missing service name"})
+			return
+		}
 		user_email := c.PostForm("email")
 		user_name := c.PostForm("username")
 		password := c.PostForm("password")
@@ -185,10 +193,10 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 		cspan := tracer.StartSpan("bcrypt generate hash",
 			opentracing.ChildOf(span.Context()),
 		)
-		hashed, err := bcrypt.GenerateFromPassword([]byte(password), 8)
+		hashed, hash_err := bcrypt.GenerateFromPassword([]byte(password), 8)
 		cspan.Finish()
-		if err != nil {
-			fmt.Println(err)
+		if hash_err != nil {
+			panic(hash_err.Error())
 		}
 
 		new_user := &models.User{
@@ -213,17 +221,13 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			Uid:            primitive.NewObjectIDFromTimestamp(time.Now()),
 		}
 
-		_, err = userdb.Create(new_user)
+		_, create_err := userdb.Create(new_user)
 
-		if err == nil {
-			c.String(200, "created")
+		if create_err != nil {
 			span.Finish()
-		} else {
-			c.String(503, "fail")
-			fmt.Println(err)
-			span.Finish()
+			panic(create_err.Error())
 		}
-
+		c.String(200, "created")
 	})
 
 	router.GET(SERVICE_NAME+"/profile/:username", func(c *gin.Context) {
@@ -233,42 +237,40 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 		name := c.Param("username")
 		token, token_err := c.Cookie("token")
 		if token_err != nil {
-			panic("failed get token")
+			c.AbortWithStatusJSON(401, gin.H{"reason": "unauthorized"})
+			return
 		}
 		splitted := strings.Split(token, "-")
-		_, err := utils.GCM_decrypt(key, splitted[1], splitted[0], nil)
-		if err == nil {
-
-			result := &models.User{}
-			err := userdb.Find("username", name, result)
-			if err != nil {
-				fmt.Println("error find user")
-				span.Finish()
-				panic(err)
-			} else {
-				user_detail := "{\"uid\": \"" + result.Uid.Hex() +
-					"\", \"username\": \"" + result.Username +
-					"\", \"email\": \"" + result.Email +
-					"\", \"role\": \"" + result.Role +
-					"\", \"avatarurl\": \"" + result.Avatarurl +
-					"\", \"active\": \"" + strconv.FormatBool(result.Active) +
-					"\", \"screenname\": \"" + result.Screenname +
-					"\", \"location\": \"" + result.Location +
-					"\", \"protected\": \"" + strconv.FormatBool(result.Protected) +
-					"\", \"description\": \"" + result.Description +
-					"\", \"verified\": \"" + strconv.FormatBool(result.Verified) +
-					"\", \"follower\": \"" + strconv.Itoa(result.Followercount) +
-					"\", \"following\": \"" + strconv.Itoa(result.Followingcount) +
-					"\", \"post\": \"" + strconv.Itoa(result.Postcount) +
-					"\"}"
-
-				c.String(200, user_detail)
-				span.Finish()
-			}
-		} else {
-			c.String(401, "unauthorized")
-			span.Finish()
+		_, decrypt_err := utils.GCM_decrypt(key, splitted[1], splitted[0], nil)
+		if decrypt_err != nil {
+			c.AbortWithStatusJSON(401, gin.H{"reason": "unauthorized"})
+			return
 		}
+		result := &models.User{}
+		find_err := userdb.Find("username", name, result)
+		if find_err != nil {
+			span.Finish()
+			c.AbortWithStatusJSON(404, gin.H{"reason": "not found"})
+			return
+		}
+		user_detail := "{\"uid\": \"" + result.Uid.Hex() +
+			"\", \"username\": \"" + result.Username +
+			"\", \"email\": \"" + result.Email +
+			"\", \"role\": \"" + result.Role +
+			"\", \"avatarurl\": \"" + result.Avatarurl +
+			"\", \"active\": \"" + strconv.FormatBool(result.Active) +
+			"\", \"screenname\": \"" + result.Screenname +
+			"\", \"location\": \"" + result.Location +
+			"\", \"protected\": \"" + strconv.FormatBool(result.Protected) +
+			"\", \"description\": \"" + result.Description +
+			"\", \"verified\": \"" + strconv.FormatBool(result.Verified) +
+			"\", \"follower\": \"" + strconv.Itoa(result.Followercount) +
+			"\", \"following\": \"" + strconv.Itoa(result.Followingcount) +
+			"\", \"post\": \"" + strconv.Itoa(result.Postcount) +
+			"\"}"
+
+		c.String(200, user_detail)
+		span.Finish()
 
 	})
 
