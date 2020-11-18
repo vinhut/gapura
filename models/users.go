@@ -15,6 +15,7 @@ type UserDatabase interface {
 	Create(*User) (bool, error)
 	Update() (bool, error)
 	Delete(string) (bool, error)
+	IncrementPost(string) error
 }
 
 type userDatabase struct {
@@ -115,4 +116,14 @@ func (userdb *userDatabase) Delete(email string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (userdb *userDatabase) IncrementPost(userid string) error {
+
+	err := userdb.db.Increment(tableName, "_id", userid, "Postcount", 1)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -178,6 +178,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 		c.String(200, "Public")
 	})
 
+	// internal create user
 	router.POST("/user", func(c *gin.Context) {
 		spanCtx, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(c.Request.Header))
 		span := tracer.StartSpan("create user", ext.RPCServerOption(spanCtx))
@@ -228,6 +229,26 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			panic(create_err.Error())
 		}
 		c.String(200, "created")
+	})
+
+	// internal increment user post count
+	router.POST("/user_post/count", func(c *gin.Context) {
+		spanCtx, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(c.Request.Header))
+		span := tracer.StartSpan("increment user post count", ext.RPCServerOption(spanCtx))
+		service_name, _ := c.GetQuery("service")
+		if service_name == "" {
+			c.AbortWithStatusJSON(401, gin.H{"reason": "Missing service name"})
+			return
+		}
+		user_name := c.PostForm("username")
+
+		result := &models.User{}
+		find_err := userdb.Find("username", user_name, result)
+		if find_err != nil {
+			span.Finish()
+			c.AbortWithStatusJSON(404, gin.H{"reason": "not found"})
+			return
+		}
 	})
 
 	router.GET(SERVICE_NAME+"/profile/:username", func(c *gin.Context) {

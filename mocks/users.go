@@ -106,3 +106,17 @@ func (mr *MockUserDatabaseMockRecorder) Delete(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUserDatabase)(nil).Delete), arg0)
 }
+
+// IncrementPost mocks base method
+func (m *MockUserDatabase) IncrementPost(arg0 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IncrementPost", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// IncrementPost indicates an expected call of IncrementPost
+func (mr *MockUserDatabaseMockRecorder) IncrementPost(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementPost", reflect.TypeOf((*MockUserDatabase)(nil).IncrementPost), arg0)
+}

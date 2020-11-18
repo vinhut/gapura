@@ -6,6 +6,7 @@ require (
 	github.com/golang/mock v1.4.0
 	github.com/opencensus-integrations/gomongowrapper v0.0.3 // indirect
 	github.com/opentracing/opentracing-go v1.2.0
+	github.com/segmentio/kafka-go v0.4.6
 	github.com/stretchr/testify v1.4.0
 	github.com/uber/jaeger-client-go v2.25.0+incompatible
 	github.com/uber/jaeger-lib v2.2.0+incompatible

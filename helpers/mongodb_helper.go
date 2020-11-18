@@ -7,7 +7,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -18,6 +17,7 @@ type DatabaseHelper interface {
 	QueryByUid(string, string, primitive.ObjectID, interface{}) error
 	Insert(string, interface{}) error
 	Delete(string, interface{}) error
+	Increment(string, string, string, string, int) error
 }
 
 type MongoDBHelper struct {
@@ -78,7 +78,6 @@ func (mdb *MongoDBHelper) Insert(collectionName string, data interface{}) error 
 	_, err = collection.InsertOne(ctx, new_user)
 
 	if err != nil {
-		fmt.Println("Got a real error:", err.Error())
 		return err
 	}
 
@@ -89,4 +88,22 @@ func (mdb *MongoDBHelper) Delete(string, interface{}) error {
 
 	return nil
 
+}
+
+func (mdb *MongoDBHelper) Increment(collectionName string, filter_key string, filter_value string, field string, scale int) error {
+
+	collection := mdb.db.Collection(collectionName)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	opts := options.Update().SetUpsert(true)
+	filter := bson.D{{filter_key, filter_value}}
+	update := bson.D{{"$inc", bson.D{{field, scale}}}}
+
+	_, err := collection.UpdateOne(ctx, filter, update, opts)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
