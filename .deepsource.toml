@@ -5,5 +5,5 @@ name = "go"
 enabled = true
 
   [analyzers.meta]
-  import_root = "github.com/vinhut/gapura"
+  import_paths = ["github.com/vinhut/gapura"]
   dependencies_vendored = true
