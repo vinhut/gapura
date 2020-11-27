@@ -7,7 +7,6 @@ package mock_models
 import (
 	gomock "github.com/golang/mock/gomock"
 	models "github.com/vinhut/gapura/models"
-	primitive "go.mongodb.org/mongo-driver/bson/primitive"
 	reflect "reflect"
 )
 
@@ -49,7 +48,7 @@ func (mr *MockUserDatabaseMockRecorder) Find(arg0, arg1, arg2 interface{}) *gomo
 }
 
 // FindByUid mocks base method
-func (m *MockUserDatabase) FindByUid(arg0 string, arg1 primitive.ObjectID, arg2 interface{}) error {
+func (m *MockUserDatabase) FindByUid(arg0, arg1 string, arg2 interface{}) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByUid", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
@@ -119,4 +118,102 @@ func (m *MockUserDatabase) IncrementPost(arg0 string) error {
 func (mr *MockUserDatabaseMockRecorder) IncrementPost(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementPost", reflect.TypeOf((*MockUserDatabase)(nil).IncrementPost), arg0)
+}
+
+// DecrementPost mocks base method
+func (m *MockUserDatabase) DecrementPost(arg0 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DecrementPost", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DecrementPost indicates an expected call of DecrementPost
+func (mr *MockUserDatabaseMockRecorder) DecrementPost(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DecrementPost", reflect.TypeOf((*MockUserDatabase)(nil).DecrementPost), arg0)
+}
+
+// IncrementLike mocks base method
+func (m *MockUserDatabase) IncrementLike(arg0 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IncrementLike", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// IncrementLike indicates an expected call of IncrementLike
+func (mr *MockUserDatabaseMockRecorder) IncrementLike(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementLike", reflect.TypeOf((*MockUserDatabase)(nil).IncrementLike), arg0)
+}
+
+// DecrementLike mocks base method
+func (m *MockUserDatabase) DecrementLike(arg0 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DecrementLike", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DecrementLike indicates an expected call of DecrementLike
+func (mr *MockUserDatabaseMockRecorder) DecrementLike(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DecrementLike", reflect.TypeOf((*MockUserDatabase)(nil).DecrementLike), arg0)
+}
+
+// IncrementFollowing mocks base method
+func (m *MockUserDatabase) IncrementFollowing(arg0 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IncrementFollowing", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// IncrementFollowing indicates an expected call of IncrementFollowing
+func (mr *MockUserDatabaseMockRecorder) IncrementFollowing(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementFollowing", reflect.TypeOf((*MockUserDatabase)(nil).IncrementFollowing), arg0)
+}
+
+// DecrementFollowing mocks base method
+func (m *MockUserDatabase) DecrementFollowing(arg0 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DecrementFollowing", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DecrementFollowing indicates an expected call of DecrementFollowing
+func (mr *MockUserDatabaseMockRecorder) DecrementFollowing(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DecrementFollowing", reflect.TypeOf((*MockUserDatabase)(nil).DecrementFollowing), arg0)
+}
+
+// IncrementFollower mocks base method
+func (m *MockUserDatabase) IncrementFollower(arg0 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IncrementFollower", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// IncrementFollower indicates an expected call of IncrementFollower
+func (mr *MockUserDatabaseMockRecorder) IncrementFollower(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementFollower", reflect.TypeOf((*MockUserDatabase)(nil).IncrementFollower), arg0)
+}
+
+// DecrementFollower mocks base method
+func (m *MockUserDatabase) DecrementFollower(arg0 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DecrementFollower", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DecrementFollower indicates an expected call of DecrementFollower
+func (mr *MockUserDatabaseMockRecorder) DecrementFollower(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DecrementFollower", reflect.TypeOf((*MockUserDatabase)(nil).DecrementFollower), arg0)
 }

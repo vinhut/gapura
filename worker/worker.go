@@ -18,30 +18,65 @@ func increment_post_count(user models.UsersDatabase, msg string) {
 
 func increment_like_count(user models.UsersDatabase, msg string) {
 
+	userid := strings.split(msg, " ")[1]
+	incr_err := user.IncrementLike(userid)
+	if incr_err != nil {
+		panic(incr_err)
+	}
 }
 
 func increment_follower_count(user models.UsersDatabase, msg string) {
 
+	userid := strings.split(msg, " ")[1]
+	incr_err := user.IncrementFollower(userid)
+	if incr_err != nil {
+		panic(incr_err)
+	}
 }
 
 func increment_following_count(user models.UsersDatabase, msg string) {
 
+	userid := strings.split(msg, " ")[1]
+	incr_err := user.IncrementFollowing(userid)
+	if incr_err != nil {
+		panic(incr_err)
+	}
 }
 
 func decrement_post_count(user models.UsersDatabase, msg string) {
 
+	userid := strings.split(msg, " ")[1]
+	decr_err := user.DecrementPost(userid)
+	if decr_err != nil {
+		panic(decr_err)
+	}
 }
 
 func decrement_like_count(user models.UsersDatabase, msg string) {
 
+	userid := strings.split(msg, " ")[1]
+	decr_err := user.DecrementLike(userid)
+	if decr_err != nil {
+		panic(decr_err)
+	}
 }
 
 func decrement_follower_count(user models.UsersDatabase, msg string) {
 
+	userid := strings.split(msg, " ")[1]
+	decr_err := user.DecrementFollower(userid)
+	if decr_err != nil {
+		panic(decr_err)
+	}
 }
 
 func decrement_following_count(user models.UsersDatabase, msg string) {
 
+	userid := strings.split(msg, " ")[1]
+	decr_err := user.DecrementFollowing(userid)
+	if decr_err != nil {
+		panic(decr_err)
+	}
 }
 
 func main() {

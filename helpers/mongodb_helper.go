@@ -9,12 +9,14 @@ import (
 	"context"
 	"log"
 	"os"
+	"reflect"
 	"time"
 )
 
 type DatabaseHelper interface {
 	Query(string, string, string, interface{}) error
-	QueryByUid(string, string, primitive.ObjectID, interface{}) error
+	QueryByUid(string, string, string, interface{}) error
+	Create(string, interface{}) error
 	Insert(string, interface{}) error
 	Delete(string, interface{}) error
 	Increment(string, string, string, string, int) error
@@ -54,17 +56,31 @@ func (mdb *MongoDBHelper) Query(collectionName string, key string, value string,
 	return nil
 }
 
-func (mdb *MongoDBHelper) QueryByUid(collectionName string, key string, value primitive.ObjectID, data interface{}) error {
+func (mdb *MongoDBHelper) QueryByUid(collectionName string, key string, value string, data interface{}) error {
 
 	collection := mdb.db.Collection(collectionName)
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	value_oid, convert_err := primitive.ObjectIDFromHex(value)
+	if convert_err != nil {
+		return convert_err
+	}
 
-	result := collection.FindOne(ctx, bson.M{key: value})
+	result := collection.FindOne(ctx, bson.M{key: value_oid})
 	err := result.Decode(data)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (mdb *MongoDBHelper) Create(collectionName string, data interface{}) error {
+
+	new_oid := primitive.NewObjectIDFromTimestamp(time.Now()).String()
+	reflect.ValueOf(&data).Elem().FieldByName("Uid").SetString(new_oid)
+	insert_err := mdb.Insert(collectionName, data)
+
+	return insert_err
+
 }
 
 func (mdb *MongoDBHelper) Insert(collectionName string, data interface{}) error {

@@ -2,7 +2,6 @@ package models
 
 import (
 	"github.com/vinhut/gapura/helpers"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"time"
 )
@@ -11,11 +10,18 @@ const tableName = "users"
 
 type UserDatabase interface {
 	Find(string, string, interface{}) error
-	FindByUid(string, primitive.ObjectID, interface{}) error
+	FindByUid(string, string, interface{}) error
 	Create(*User) (bool, error)
 	Update() (bool, error)
 	Delete(string) (bool, error)
 	IncrementPost(string) error
+	DecrementPost(string) error
+	IncrementLike(string) error
+	DecrementLike(string) error
+	IncrementFollowing(string) error
+	DecrementFollowing(string) error
+	IncrementFollower(string) error
+	DecrementFollower(string) error
 }
 
 type userDatabase struct {
@@ -41,7 +47,7 @@ type User struct {
 	Likecount      int
 	Postcount      int
 	Updatetime     time.Time
-	Uid            primitive.ObjectID `bson:"_id, omitempty"`
+	Uid            string `bson:"_id, omitempty"`
 }
 
 func NewUser() User {
@@ -84,7 +90,7 @@ func (userdb *userDatabase) Find(column string, value string, result_user interf
 	return nil
 }
 
-func (userdb *userDatabase) FindByUid(column string, value primitive.ObjectID, result_user interface{}) error {
+func (userdb *userDatabase) FindByUid(column string, value string, result_user interface{}) error {
 	err := userdb.db.QueryByUid(tableName, column, value, result_user)
 	if err != nil {
 		return err
@@ -94,7 +100,7 @@ func (userdb *userDatabase) FindByUid(column string, value primitive.ObjectID, r
 }
 
 func (userdb *userDatabase) Create(user *User) (bool, error) {
-	err := userdb.db.Insert(tableName, user)
+	err := userdb.db.Create(tableName, user)
 	if err != nil {
 		return false, err
 	}
@@ -121,6 +127,76 @@ func (userdb *userDatabase) Delete(email string) (bool, error) {
 func (userdb *userDatabase) IncrementPost(userid string) error {
 
 	err := userdb.db.Increment(tableName, "_id", userid, "Postcount", 1)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (userdb *userDatabase) DecrementPost(userid string) error {
+
+	err := userdb.db.Increment(tableName, "_id", userid, "Postcount", -1)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (userdb *userDatabase) IncrementLike(userid string) error {
+
+	err := userdb.db.Increment(tableName, "_id", userid, "Likecount", 1)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (userdb *userDatabase) DecrementLike(userid string) error {
+
+	err := userdb.db.Increment(tableName, "_id", userid, "Likecount", -1)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (userdb *userDatabase) IncrementFollowing(userid string) error {
+
+	err := userdb.db.Increment(tableName, "_id", userid, "Followingcount", 1)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (userdb *userDatabase) DecrementFollowing(userid string) error {
+
+	err := userdb.db.Increment(tableName, "_id", userid, "Followingcount", -1)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (userdb *userDatabase) IncrementFollower(userid string) error {
+
+	err := userdb.db.Increment(tableName, "_id", userid, "Followercount", 1)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (userdb *userDatabase) DecrementFollower(userid string) error {
+
+	err := userdb.db.Increment(tableName, "_id", userid, "Followercount", -1)
 	if err != nil {
 		return err
 	}

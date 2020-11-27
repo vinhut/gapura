@@ -13,7 +13,6 @@ import (
 	"github.com/vinhut/gapura/helpers"
 	"github.com/vinhut/gapura/models"
 	"github.com/vinhut/gapura/utils"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 
 	"crypto/rand"
@@ -93,7 +92,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			panic(read_err.Error())
 		}
 		now := time.Now()
-		auth_token := "{\"uid\": \"" + result.Uid.Hex() + "\", \"email\": \"" +
+		auth_token := "{\"uid\": \"" + result.Uid + "\", \"email\": \"" +
 			user_email + "\", \"role\": \"" + result.Role +
 			"\", \"created\": \"" + now.Format("2006-01-02T15:04:05") +
 			"\"}"
@@ -147,18 +146,18 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			panic(json_err.Error())
 		}
 		user_data := &models.User{}
-		find_uid, convert_err := primitive.ObjectIDFromHex(placeholder["uid"].(string))
-		if convert_err != nil {
-			span.Finish()
-			panic(convert_err.Error())
-		}
-		find_err := userdb.FindByUid("_id", find_uid, user_data)
+		//find_uid, convert_err := primitive.ObjectIDFromHex(placeholder["uid"].(string))
+		//if convert_err != nil {
+		//	span.Finish()
+		//	panic(convert_err.Error())
+		//}
+		find_err := userdb.FindByUid("_id", placeholder["uid"].(string), user_data)
 		if find_err != nil {
 			span.Finish()
 			c.AbortWithStatusJSON(404, gin.H{"reason": "User not found"})
 			return
 		}
-		user_detail := "{\"uid\": \"" + user_data.Uid.Hex() +
+		user_detail := "{\"uid\": \"" + user_data.Uid +
 			"\", \"username\": \"" + user_data.Username +
 			"\", \"email\": \"" + user_data.Email +
 			"\", \"role\": \"" + user_data.Role +
@@ -219,7 +218,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			Likecount:      0,
 			Postcount:      0,
 			Updatetime:     time.Now(),
-			Uid:            primitive.NewObjectIDFromTimestamp(time.Now()),
+			//Uid:            primitive.NewObjectIDFromTimestamp(time.Now()).String,
 		}
 
 		_, create_err := userdb.Create(new_user)
@@ -274,7 +273,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			c.AbortWithStatusJSON(404, gin.H{"reason": "not found"})
 			return
 		}
-		user_detail := "{\"uid\": \"" + result.Uid.Hex() +
+		user_detail := "{\"uid\": \"" + result.Uid +
 			"\", \"username\": \"" + result.Username +
 			"\", \"email\": \"" + result.Email +
 			"\", \"role\": \"" + result.Role +
