@@ -10,7 +10,7 @@ import (
 	transport "github.com/uber/jaeger-client-go/transport/zipkin"
 	"github.com/uber/jaeger-client-go/zipkin"
 	"github.com/uber/jaeger-lib/metrics"
-	"github.com/vinhut/gapura/helpers"
+	helper "github.com/vinhut/gapura/helpers"
 	"github.com/vinhut/gapura/models"
 	"github.com/vinhut/gapura/utils"
 	"golang.org/x/crypto/bcrypt"
@@ -146,11 +146,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			panic(json_err.Error())
 		}
 		user_data := &models.User{}
-		//find_uid, convert_err := primitive.ObjectIDFromHex(placeholder["uid"].(string))
-		//if convert_err != nil {
-		//	span.Finish()
-		//	panic(convert_err.Error())
-		//}
+
 		find_err := userdb.FindByUid("_id", placeholder["uid"].(string), user_data)
 		if find_err != nil {
 			span.Finish()

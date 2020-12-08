@@ -76,8 +76,14 @@ func (mdb *MongoDBHelper) QueryByUid(collectionName string, key string, value st
 func (mdb *MongoDBHelper) Create(collectionName string, data interface{}) error {
 
 	new_oid := primitive.NewObjectIDFromTimestamp(time.Now()).String()
-	reflect.ValueOf(&data).Elem().FieldByName("Uid").SetString(new_oid)
-	insert_err := mdb.Insert(collectionName, data)
+
+	v := reflect.ValueOf(&data).Elem()
+	tmp := reflect.New(v.Elem().Type()).Elem()
+	tmp.Set(v.Elem())
+	tmp.FieldByName("Uid").SetString(new_oid)
+	v.Set(tmp)
+
+	insert_err := mdb.Insert(collectionName, v)
 
 	return insert_err
 
