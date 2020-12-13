@@ -70,6 +70,7 @@ func NewUser() User {
 		Likecount:      0,
 		Postcount:      0,
 		Updatetime:     time.Now(),
+		Uid:            "",
 	}
 
 	return user

@@ -74,7 +74,7 @@ func (mdb *MongoDBHelper) QueryByUid(collectionName string, key string, value st
 
 func (mdb *MongoDBHelper) CreateID() string {
 
-	new_oid := primitive.NewObjectIDFromTimestamp(time.Now()).String()
+	new_oid := primitive.NewObjectIDFromTimestamp(time.Now()).Hex()
 
 	return new_oid
 }
