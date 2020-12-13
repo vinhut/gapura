@@ -11,7 +11,7 @@ const tableName = "users"
 type UserDatabase interface {
 	Find(string, string, interface{}) error
 	FindByUid(string, string, interface{}) error
-	Create(*User) (bool, error)
+	Create(User) (bool, error)
 	Update() (bool, error)
 	Delete(string) (bool, error)
 	IncrementPost(string) error
@@ -99,7 +99,7 @@ func (userdb *userDatabase) FindByUid(column string, value string, result_user i
 	return nil
 }
 
-func (userdb *userDatabase) Create(user *User) (bool, error) {
+func (userdb *userDatabase) Create(user User) (bool, error) {
 	err := userdb.db.Create(tableName, user)
 	if err != nil {
 		return false, err

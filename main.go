@@ -195,7 +195,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			panic(hash_err.Error())
 		}
 
-		new_user := &models.User{
+		new_user := models.User{
 			Username:       user_name,
 			Email:          user_email,
 			Password:       string(hashed),

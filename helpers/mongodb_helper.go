@@ -77,7 +77,7 @@ func (mdb *MongoDBHelper) Create(collectionName string, data interface{}) error 
 
 	new_oid := primitive.NewObjectIDFromTimestamp(time.Now()).String()
 
-	v := reflect.ValueOf(data).Elem()
+	v := reflect.ValueOf(&data).Elem()
 	tmp := reflect.New(v.Elem().Type()).Elem()
 	tmp.Set(v.Elem())
 	tmp.FieldByName("Uid").SetString(new_oid)
