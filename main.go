@@ -147,7 +147,11 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 		}
 		user_data := &models.User{}
 
+		cspan = tracer.StartSpan("find user by uid",
+			opentracing.ChildOf(span.Context()),
+		)
 		find_err := userdb.FindByUid("_id", placeholder["uid"].(string), user_data)
+		cspan.Finish()
 		if find_err != nil {
 			span.Finish()
 			c.AbortWithStatusJSON(404, gin.H{"reason": "User not found"})
