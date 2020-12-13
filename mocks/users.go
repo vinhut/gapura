@@ -62,7 +62,7 @@ func (mr *MockUserDatabaseMockRecorder) FindByUid(arg0, arg1, arg2 interface{}) 
 }
 
 // Create mocks base method
-func (m *MockUserDatabase) Create(arg0 *models.User) (bool, error) {
+func (m *MockUserDatabase) Create(arg0 models.User) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", arg0)
 	ret0, _ := ret[0].(bool)
