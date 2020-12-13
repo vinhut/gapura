@@ -70,7 +70,6 @@ func NewUser() User {
 		Likecount:      0,
 		Postcount:      0,
 		Updatetime:     time.Now(),
-		Uid:            "",
 	}
 
 	return user
@@ -101,8 +100,6 @@ func (userdb *userDatabase) FindByUid(column string, value string, result_user i
 }
 
 func (userdb *userDatabase) Create(user User) (bool, error) {
-
-	user.Uid = userdb.db.CreateID()
 
 	err := userdb.db.Insert(tableName, user)
 	if err != nil {
