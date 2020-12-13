@@ -2,7 +2,7 @@ package models
 
 import (
 	"github.com/vinhut/gapura/helpers"
-
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
 
@@ -47,7 +47,7 @@ type User struct {
 	Likecount      int
 	Postcount      int
 	Updatetime     time.Time
-	Uid            string `bson:"_id, omitempty"`
+	Uid            primitive.ObjectID `bson:"_id, omitempty"`
 }
 
 func NewUser() User {
@@ -70,6 +70,7 @@ func NewUser() User {
 		Likecount:      0,
 		Postcount:      0,
 		Updatetime:     time.Now(),
+		Uid:            primitive.NewObjectIDFromTimestamp(time.Now()),
 	}
 
 	return user

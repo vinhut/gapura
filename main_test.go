@@ -102,7 +102,7 @@ func TestFailedLogin(t *testing.T) {
 func TestDecryptToken(t *testing.T) {
 
 	service_name := "test-service"
-	test_uid := primitive.NewObjectID().String()
+	test_uid := primitive.NewObjectID()
 	token := "439e835079c54999066756ce-826dc68c5fc8c80aafab394632223f64dabdf89f0fd1b1a08d2398fed435d8b89ed0d2a97748054a1f442cf2b6adb953bbd4d5318f7dd7304dda9562325bad2b6d29843121690e7d7e27e1cdd17b9fef9be49aff66cd7610698b7fdd4722528432b545a522fabc334c9fb3a2b07299d4ebdc3d70c1b0204ea88b38da670447b9031d2fe9235a56cb268d"
 
 	os.Setenv("KEY", "12345678901234567890123456789012")
@@ -149,7 +149,7 @@ func TestFailedDecryptToken(t *testing.T) {
 func TestDecryptTokenFromCookies(t *testing.T) {
 
 	service_name := "test-service"
-	test_uid := primitive.NewObjectID().String()
+	test_uid := primitive.NewObjectID()
 	token := "439e835079c54999066756ce-826dc68c5fc8c80aafab394632223f64dabdf89f0fd1b1a08d2398fed435d8b89ed0d2a97748054a1f442cf2b6adb953bbd4d5318f7dd7304dda9562325bad2b6d29843121690e7d7e27e1cdd17b9fef9be49aff66cd7610698b7fdd4722528432b545a522fabc334c9fb3a2b07299d4ebdc3d70c1b0204ea88b38da670447b9031d2fe9235a56cb268d"
 
 	os.Setenv("KEY", "12345678901234567890123456789012")

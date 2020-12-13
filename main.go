@@ -92,7 +92,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			panic(read_err.Error())
 		}
 		now := time.Now()
-		auth_token := "{\"uid\": \"" + result.Uid + "\", \"email\": \"" +
+		auth_token := "{\"uid\": \"" + result.Uid.Hex() + "\", \"email\": \"" +
 			user_email + "\", \"role\": \"" + result.Role +
 			"\", \"created\": \"" + now.Format("2006-01-02T15:04:05") +
 			"\"}"
@@ -153,7 +153,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			c.AbortWithStatusJSON(404, gin.H{"reason": "User not found"})
 			return
 		}
-		user_detail := "{\"uid\": \"" + user_data.Uid +
+		user_detail := "{\"uid\": \"" + user_data.Uid.Hex() +
 			"\", \"username\": \"" + user_data.Username +
 			"\", \"email\": \"" + user_data.Email +
 			"\", \"role\": \"" + user_data.Role +
@@ -214,7 +214,6 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			Likecount:      0,
 			Postcount:      0,
 			Updatetime:     time.Now(),
-			//Uid:            primitive.NewObjectIDFromTimestamp(time.Now()).String,
 		}
 
 		_, create_err := userdb.Create(new_user)
@@ -269,7 +268,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			c.AbortWithStatusJSON(404, gin.H{"reason": "not found"})
 			return
 		}
-		user_detail := "{\"uid\": \"" + result.Uid +
+		user_detail := "{\"uid\": \"" + result.Uid.Hex() +
 			"\", \"username\": \"" + result.Username +
 			"\", \"email\": \"" + result.Email +
 			"\", \"role\": \"" + result.Role +
