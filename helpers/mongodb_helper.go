@@ -9,14 +9,13 @@ import (
 	"context"
 	"log"
 	"os"
-	"reflect"
 	"time"
 )
 
 type DatabaseHelper interface {
 	Query(string, string, string, interface{}) error
 	QueryByUid(string, string, string, interface{}) error
-	Create(string, interface{}) error
+	CreateID() string
 	Insert(string, interface{}) error
 	Delete(string, interface{}) error
 	Increment(string, string, string, string, int) error
@@ -73,20 +72,11 @@ func (mdb *MongoDBHelper) QueryByUid(collectionName string, key string, value st
 	return nil
 }
 
-func (mdb *MongoDBHelper) Create(collectionName string, data interface{}) error {
+func (mdb *MongoDBHelper) CreateID() string {
 
 	new_oid := primitive.NewObjectIDFromTimestamp(time.Now()).String()
 
-	v := reflect.ValueOf(&data).Elem()
-	tmp := reflect.New(v.Elem().Type()).Elem()
-	tmp.Set(v.Elem())
-	tmp.FieldByName("Uid").SetString(new_oid)
-	v.Set(tmp)
-
-	insert_err := mdb.Insert(collectionName, v)
-
-	return insert_err
-
+	return new_oid
 }
 
 func (mdb *MongoDBHelper) Insert(collectionName string, data interface{}) error {
