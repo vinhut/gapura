@@ -102,6 +102,8 @@ func (userdb *userDatabase) FindByUid(column string, value string, result_user i
 
 func (userdb *userDatabase) Create(user User) (bool, error) {
 
+	user.Uid = primitive.NewObjectIDFromTimestamp(time.Now())
+
 	err := userdb.db.Insert(tableName, user)
 	if err != nil {
 		return false, err
