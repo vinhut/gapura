@@ -29,7 +29,10 @@ type MongoDBHelper struct {
 func NewMongoDatabase() DatabaseHelper {
 
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_URL")))
+	client_opts := options.Client().ApplyURI(os.Getenv("MONGO_URL"))
+	client_opts = client_opts.SetMaxPoolSize(30)
+	client_opts = client_opts.SetMinPoolSize(30)
+	client, err := mongo.Connect(ctx, client_opts)
 	if err != nil {
 		log.Fatal(err)
 		return nil
