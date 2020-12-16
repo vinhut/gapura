@@ -1,7 +1,7 @@
 # Dockerfile References: https://docs.docker.com/engine/reference/builder/
 
 # Start from the latest golang base image
-FROM golang:1.11.5 as builder
+FROM golang:1.13 as builder
 
 # Add Maintainer Info
 LABEL maintainer="vinhut <hutama.alvin@gmail.com>"
@@ -26,7 +26,7 @@ COPY . .
 # Build the Go app
 RUN go build -o main .
 
-FROM golang:1.11.5-alpine
+FROM golang:1.13-alpine
 
 RUN apk --no-cache add ca-certificates
 
