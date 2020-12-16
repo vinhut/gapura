@@ -12,8 +12,8 @@ import (
 	"github.com/uber/jaeger-lib/metrics"
 	helper "github.com/vinhut/gapura/helpers"
 	"github.com/vinhut/gapura/models"
+	services "github.com/vinhut/gapura/services"
 	"github.com/vinhut/gapura/utils"
-	"golang.org/x/crypto/bcrypt"
 
 	"crypto/rand"
 	"encoding/json"
@@ -26,7 +26,7 @@ import (
 
 var SERVICE_NAME = "auth-service"
 
-func setupRouter(userdb models.UserDatabase) *gin.Engine {
+func setupRouter(userdb models.UserDatabase, cache services.RedisService) *gin.Engine {
 
 	var JAEGER_COLLECTOR_ENDPOINT = os.Getenv("JAEGER_COLLECTOR_ENDPOINT")
 	zipkinPropagator := zipkin.NewZipkinB3HTTPHeaderPropagator()
@@ -59,6 +59,7 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 	tracer := opentracing.GlobalTracer()
 
 	key := os.Getenv("KEY")
+
 	router := gin.Default()
 
 	router.GET("/ping", func(c *gin.Context) {
@@ -72,16 +73,21 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 		user_email := c.PostForm("email")
 		user_pass := c.PostForm("password")
 		result := &models.User{}
+
+		cspan := tracer.StartSpan("find user by email",
+			opentracing.ChildOf(span.Context()),
+		)
 		find_err := userdb.Find("email", user_email, result)
+		cspan.Finish()
 
 		if find_err != nil {
 			c.AbortWithStatusJSON(401, gin.H{"reason": "login error"})
 			return
 		}
-		cspan := tracer.StartSpan("bcrypt compare hash",
+		cspan = tracer.StartSpan("compare hash",
 			opentracing.ChildOf(span.Context()),
 		)
-		compare_err := bcrypt.CompareHashAndPassword([]byte(result.Password), []byte(user_pass))
+		compare_err := utils.CompareHashAndPassword(result.Password, user_pass)
 		cspan.Finish()
 		if compare_err != nil {
 			c.AbortWithStatusJSON(401, gin.H{"reason": "login error"})
@@ -147,7 +153,18 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 		}
 		user_data := &models.User{}
 
-		cspan = tracer.StartSpan("find user by uid",
+		cspan = tracer.StartSpan("cache find user by uid",
+			opentracing.ChildOf(span.Context()),
+		)
+		entry, cache_err := cache.Get(placeholder["uid"].(string))
+		cspan.Finish()
+		if cache_err == nil {
+			span.Finish()
+			c.String(200, entry)
+			return
+		}
+
+		cspan = tracer.StartSpan("db find user by uid",
 			opentracing.ChildOf(span.Context()),
 		)
 		find_err := userdb.FindByUid("_id", placeholder["uid"].(string), user_data)
@@ -169,12 +186,9 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			"\", \"description\": \"" + user_data.Description +
 			"\", \"verified\": \"" + strconv.FormatBool(user_data.Verified) +
 			"\"}"
+		cache.Set(placeholder["uid"].(string), user_detail)
 		c.String(200, user_detail)
 		span.Finish()
-	})
-
-	router.GET("/public", func(c *gin.Context) {
-		c.String(200, "Public")
 	})
 
 	// internal create user
@@ -190,19 +204,16 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 		user_name := c.PostForm("username")
 		password := c.PostForm("password")
 
-		cspan := tracer.StartSpan("bcrypt generate hash",
+		cspan := tracer.StartSpan("generate hash",
 			opentracing.ChildOf(span.Context()),
 		)
-		hashed, hash_err := bcrypt.GenerateFromPassword([]byte(password), 8)
+		hashed := utils.GenerateFromPassword(password)
 		cspan.Finish()
-		if hash_err != nil {
-			panic(hash_err.Error())
-		}
 
 		new_user := models.User{
 			Username:       user_name,
 			Email:          user_email,
-			Password:       string(hashed),
+			Password:       hashed,
 			Role:           "standard",
 			Lastlogin:      time.Now(),
 			Creationtime:   time.Now(),
@@ -227,26 +238,6 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 			panic(create_err.Error())
 		}
 		c.String(200, "created")
-	})
-
-	// internal increment user post count
-	router.POST("/user_post/count", func(c *gin.Context) {
-		spanCtx, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(c.Request.Header))
-		span := tracer.StartSpan("increment user post count", ext.RPCServerOption(spanCtx))
-		service_name, _ := c.GetQuery("service")
-		if service_name == "" {
-			c.AbortWithStatusJSON(401, gin.H{"reason": "Missing service name"})
-			return
-		}
-		user_name := c.PostForm("username")
-
-		result := &models.User{}
-		find_err := userdb.Find("username", user_name, result)
-		if find_err != nil {
-			span.Finish()
-			c.AbortWithStatusJSON(404, gin.H{"reason": "not found"})
-			return
-		}
 	})
 
 	router.GET(SERVICE_NAME+"/profile/:username", func(c *gin.Context) {
@@ -293,6 +284,26 @@ func setupRouter(userdb models.UserDatabase) *gin.Engine {
 
 	})
 
+	// internal delete user
+	router.DELETE("/user/:userid", func(c *gin.Context) {
+
+		spanCtx, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(c.Request.Header))
+		span := tracer.StartSpan("delete user", ext.RPCServerOption(spanCtx))
+
+		uid := c.Param("userid")
+		_, delete_err := userdb.Delete(uid)
+		if delete_err != nil {
+			span.Finish()
+			c.AbortWithStatusJSON(404, gin.H{"reason": "not found"})
+			return
+		}
+		cache.Delete(uid)
+
+		c.String(200, "deleted")
+		span.Finish()
+
+	})
+
 	return router
 
 }
@@ -301,7 +312,9 @@ func main() {
 
 	mongo_layer := helper.NewMongoDatabase()
 	userdb := models.NewUserDatabase(mongo_layer)
-	router := setupRouter(userdb)
+	redis_service := services.NewRedisService()
+
+	router := setupRouter(userdb, redis_service)
 	router.Run(":8080") // listen and serve on 0.0.0.0:8080
 
 }

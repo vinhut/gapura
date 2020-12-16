@@ -116,11 +116,9 @@ func (userdb *userDatabase) Update() (bool, error) {
 	return false, nil
 }
 
-func (userdb *userDatabase) Delete(email string) (bool, error) {
-	query := &User{
-		Email: email,
-	}
-	err := userdb.db.Delete(tableName, query)
+func (userdb *userDatabase) Delete(uid string) (bool, error) {
+
+	err := userdb.db.Delete(tableName, uid)
 	if err != nil {
 		return false, err
 	}

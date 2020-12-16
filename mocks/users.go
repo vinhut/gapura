@@ -2,7 +2,7 @@
 // Source: models/users.go
 
 // Package mock_models is a generated GoMock package.
-package mock_models
+package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"

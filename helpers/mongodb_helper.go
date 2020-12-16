@@ -17,7 +17,7 @@ type DatabaseHelper interface {
 	QueryByUid(string, string, string, interface{}) error
 	CreateID() string
 	Insert(string, interface{}) error
-	Delete(string, interface{}) error
+	Delete(string, string) error
 	Increment(string, string, string, string, int) error
 }
 
@@ -92,16 +92,20 @@ func (mdb *MongoDBHelper) Insert(collectionName string, data interface{}) error 
 	}
 	_, err = collection.InsertOne(ctx, new_user)
 
-	if err != nil {
-		return err
-	}
-
 	return err
 }
 
-func (mdb *MongoDBHelper) Delete(string, interface{}) error {
+func (mdb *MongoDBHelper) Delete(collectionName, uid string) error {
 
-	return nil
+	collection := mdb.db.Collection(collectionName)
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	value_oid, convert_err := primitive.ObjectIDFromHex(uid)
+	if convert_err != nil {
+		return convert_err
+	}
+
+	_, err := collection.DeleteOne(ctx, bson.M{"_id": value_oid})
+	return err
 
 }
 

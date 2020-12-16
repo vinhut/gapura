@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"bytes"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -20,8 +21,9 @@ func TestPing(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mock_user := mocks.NewMockUserDatabase(ctrl)
+	mock_redis := mocks.NewMockRedisService(ctrl)
 
-	router := setupRouter(mock_user)
+	router := setupRouter(mock_user, mock_redis)
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ping", nil)
@@ -34,13 +36,14 @@ func TestPing(t *testing.T) {
 func TestLogin(t *testing.T) {
 
 	test_email := "newusertest@test.com"
-	test_password := "test_password"
-	hashed_password := "$2a$14$quU8rC8Cfska91KtagAkhOPdMvQ5sEPMwelBFDFvrdUR2/uCoa/MC"
+	test_password := "abjectCaribou5xmail"
+	hashed_password := "d4d2576a479d6bbe-eae87d01f4ddf7590576e236f09c3ffb697d9e7b8efb7bc32eb1474f344b763b"
 
 	os.Setenv("KEY", "12345678901234567890123456789012")
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mock_user := mocks.NewMockUserDatabase(ctrl)
+	mock_redis := mocks.NewMockRedisService(ctrl)
 	input := models.User{}
 	mock_user.EXPECT().Find("email", test_email, &input).Do(
 		func(a string, b string, c *models.User) error {
@@ -50,7 +53,7 @@ func TestLogin(t *testing.T) {
 			return nil
 		})
 
-	router := setupRouter(mock_user)
+	router := setupRouter(mock_user, mock_redis)
 
 	var param = url.Values{}
 	param.Set("email", test_email)
@@ -69,12 +72,13 @@ func TestFailedLogin(t *testing.T) {
 
 	test_email := "newusertest@test.com"
 	test_password := "WRONG Password"
-	hashed_password := "$2a$14$quU8rC8Cfska91KtagAkhOPdMvQ5sEPMwelBFDFvrdUR2/uCoa/MC"
+	hashed_password := "d4d2576a479d6bbe-eae87d01f4ddf7590576e236f09c3ffb697d9e7b8efb7bc32eb1474f344b763b"
 
 	os.Setenv("KEY", "12345678901234567890123456789012")
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mock_user := mocks.NewMockUserDatabase(ctrl)
+	mock_redis := mocks.NewMockRedisService(ctrl)
 	input := models.User{}
 	mock_user.EXPECT().Find("email", test_email, &input).Do(
 		func(a string, b string, c *models.User) error {
@@ -84,7 +88,7 @@ func TestFailedLogin(t *testing.T) {
 			return nil
 		})
 
-	router := setupRouter(mock_user)
+	router := setupRouter(mock_user, mock_redis)
 
 	var param = url.Values{}
 	param.Set("email", test_email)
@@ -109,14 +113,17 @@ func TestDecryptToken(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mock_user := mocks.NewMockUserDatabase(ctrl)
+	mock_redis := mocks.NewMockRedisService(ctrl)
 	input := models.User{}
 	mock_user.EXPECT().FindByUid("_id", gomock.Any(), &input).Do(
 		func(a string, b string, c *models.User) error {
 			c.Uid = test_uid
 			return nil
 		})
+	mock_redis.EXPECT().Set(gomock.Any(), gomock.Any()).Return(nil)
+	mock_redis.EXPECT().Get(gomock.Any()).Return("", errors.New("mock error"))
 
-	router := setupRouter(mock_user)
+	router := setupRouter(mock_user, mock_redis)
 
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/user?service="+service_name+
@@ -135,8 +142,9 @@ func TestFailedDecryptToken(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mock_user := mocks.NewMockUserDatabase(ctrl)
+	mock_redis := mocks.NewMockRedisService(ctrl)
 
-	router := setupRouter(mock_user)
+	router := setupRouter(mock_user, mock_redis)
 
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/user?service="+service_name+
@@ -156,14 +164,17 @@ func TestDecryptTokenFromCookies(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mock_user := mocks.NewMockUserDatabase(ctrl)
+	mock_redis := mocks.NewMockRedisService(ctrl)
 	input := models.User{}
 	mock_user.EXPECT().FindByUid("_id", gomock.Any(), &input).Do(
 		func(a string, b string, c *models.User) error {
 			c.Uid = test_uid
 			return nil
 		})
+	mock_redis.EXPECT().Set(gomock.Any(), gomock.Any()).Return(nil)
+	mock_redis.EXPECT().Get(gomock.Any()).Return("", errors.New("mock error"))
 
-	router := setupRouter(mock_user)
+	router := setupRouter(mock_user, mock_redis)
 
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/user?service="+service_name, nil)
@@ -182,8 +193,9 @@ func TestFailedDecryptTokenFromCookies(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mock_user := mocks.NewMockUserDatabase(ctrl)
+	mock_redis := mocks.NewMockRedisService(ctrl)
 
-	router := setupRouter(mock_user)
+	router := setupRouter(mock_user, mock_redis)
 
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/user?service="+service_name, nil)
@@ -191,22 +203,6 @@ func TestFailedDecryptTokenFromCookies(t *testing.T) {
 	router.ServeHTTP(rec, req)
 
 	assert.Equal(t, 401, rec.Code)
-}
-
-func TestPublicEndpoint(t *testing.T) {
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mock_user := mocks.NewMockUserDatabase(ctrl)
-
-	router := setupRouter(mock_user)
-
-	rec := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/public", nil)
-	router.ServeHTTP(rec, req)
-
-	assert.Equal(t, 200, rec.Code)
-
 }
 
 func TestCreateUser(t *testing.T) {
@@ -218,9 +214,10 @@ func TestCreateUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mock_user := mocks.NewMockUserDatabase(ctrl)
+	mock_redis := mocks.NewMockRedisService(ctrl)
 	mock_user.EXPECT().Create(gomock.Any()).Return(true, nil)
 
-	router := setupRouter(mock_user)
+	router := setupRouter(mock_user, mock_redis)
 
 	var param = url.Values{}
 	param.Set("email", test_email)
