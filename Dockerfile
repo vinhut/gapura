@@ -26,7 +26,7 @@ COPY . .
 # Build the Go app
 RUN go build -o main .
 
-FROM golang:1.13-alpine
+FROM golang:1.17.0-alpine
 
 RUN apk --no-cache add ca-certificates
 
